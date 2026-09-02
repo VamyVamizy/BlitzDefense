@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Base</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body data-can-edit-roles="<%= canEditRoles ? 'true' : 'false' %>"
+    data-can-assign-admin="<%= canAssignAdmin ? 'true' : 'false' %>">
+    <div class="admin-page-shell">
+        <div class="admin-page-header">
+            <div>
+                <p class="admin-sidebar-kicker">Admin Tools</p>
+                <h1>Player Base</h1>
+                <p class="admin-page-subtitle">Manage roles for logged-in players.</p>
+                <p class="admin-page-permissions">Edit access: <span id="editAccessState">checking...</span> • Admin
+                    assign: <span id="assignAdminState">checking...</span></p>
+            </div>
+            <div class="admin-page-actions">
+                <button class="secondary-btn" type="button" onclick="window.location.href='/'">To Game</button>
+            </div>
+        </div>
+
+        <div class="profile-picture-editor">
+            <img id="profilePicturePreview" class="profile-picture-preview" alt="Your profile picture">
+            <div>
+                <strong>Your profile picture</strong>
+                <div class="profile-picture-actions">
+                    <input id="profilePictureInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+                    <button id="saveProfilePictureBtn" class="secondary-btn" type="button">Save Picture</button>
+                    <button id="removeProfilePictureBtn" class="secondary-btn" type="button">Remove</button>
+                </div>
+                <span id="profilePictureStatus" class="profile-picture-status"></span>
+            </div>
+        </div>
+
+        <% if (canViewPlayers !==false) { %>
+            <div class="admin-page-toolbar">
+                <input id="playerBaseSearch" type="text" placeholder="Search username, id, or role..."
+                    autocomplete="off">
+                <button id="refreshPlayerBaseBtn" class="secondary-btn" type="button">Refresh</button>
+            </div>
+
+            <div class="admin-sidebar-meta">
+                <span id="playerBaseCount"></span>
+            </div>
+
+            <div id="playerBaseList" class="playerbase-list playerbase-page-list" role="list"></div>
+            <% } %>
+    </div>
+
+    <script>
+        (function () {
+            const listEl = document.getElementById('playerBaseList');
+            const countEl = document.getElementById('playerBaseCount');
+            const searchEl = document.getElementById('playerBaseSearch');
+            const refreshBtn = document.getElementById('refreshPlayerBaseBtn');
+            const editAccessState = document.getElementById('editAccessState');
+            const assignAdminState = document.getElementById('assignAdminState');
+            const canEditRoles = document.body.dataset.canEditRoles === 'true';
+            const canAssignAdmin = document.body.dataset.canAssignAdmin === 'true';
+            const canViewPlayers = <%= canViewPlayers !== false ? 'true' : 'false' %>;
+            const profileInput = document.getElementById('profilePictureInput');
+            const profilePreview = document.getElementById('profilePicturePreview');
+            const profileStatus = document.getElementById('profilePictureStatus');
+            let selectedProfilePicture = '';
+            let allPlayers = [];
+
+            async function loadProfilePicture() {
+                const response = await fetch('/profilePicture');
+                const data = await response.json();
+                selectedProfilePicture = data.profilePicture || '';
+                profilePreview.src = selectedProfilePicture || '/img/scout.png';
+            }
+
+            profileInput?.addEventListener('change', () => {
+                const file = profileInput.files?.[0];
+                if (!file) return;
+                if (file.size > 1024 * 1024) {
+                    profileStatus.textContent = 'Choose an image under 1 MB.';
+                    profileInput.value = '';
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => {
+                    selectedProfilePicture = String(reader.result || '');
+                    profilePreview.src = selectedProfilePicture;
+                };
+                reader.readAsDataURL(file);
+            });
+
+            document.getElementById('saveProfilePictureBtn')?.addEventListener('click', async () => {
+                const response = await fetch('/profilePicture', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profilePicture: selectedProfilePicture })
+                });
+                const data = await response.json();
+                profileStatus.textContent = data.ok ? 'Saved.' : (data.error || 'Unable to save picture.');
+                if (data.ok) window.game?.setProfilePicture?.(data.profilePicture);
+            });
+
+            document.getElementById('removeProfilePictureBtn')?.addEventListener('click', async () => {
+                selectedProfilePicture = '';
+                const response = await fetch('/profilePicture', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profilePicture: '' })
+                });
+                const data = await response.json();
+                profileStatus.textContent = data.ok ? 'Removed.' : (data.error || 'Unable to remove picture.');
+                if (data.ok) profilePreview.src = '/img/scout.png';
+            });
+
+            if (editAccessState) editAccessState.textContent = canEditRoles ? 'enabled' : 'disabled';
+            if (assignAdminState) assignAdminState.textContent = canAssignAdmin ? 'enabled' : 'disabled';
+
+            function escapeHtml(value) {
+                return String(value)
+                    .replaceAll('&', '&amp;')
+                    .replaceAll('<', '&lt;')
+                    .replaceAll('>', '&gt;')
+                    .replaceAll('"', '&quot;')
+                    .replaceAll("'", '&#39;');
+            }
+
+            function render(players) {
+                if (!listEl) return;
+
+                if (!players.length) {
+                    listEl.innerHTML = '<div class="playerbase-empty">No logged-in players found.</div>';
+                    countEl.textContent = '0 players';
+                    return;
+                }
+
+                countEl.textContent = players.length + ' player' + (players.length === 1 ? '' : 's');
+                listEl.innerHTML = players.map(player => {
+                    const selectedRoles = Array.isArray(player.roles) && player.roles.length ? player.roles : String(player.role || 'player').split(',').map(r => r.trim()).filter(Boolean);
+                    const lockedOwner = !!player.isOwner;
+                    const roleOptions = ['player', 'moderator', 'admin'];
+                    return `
+                        <div class="playerbase-row" role="listitem">
+                            <div class="playerbase-main">
+                                <img class="playerbase-avatar" src="${escapeHtml(player.profilePicture || '/img/scout.png')}" alt="">
+                                <div class="playerbase-name">${escapeHtml(player.username || 'Unknown')}</div>
+                                <div class="playerbase-sub">FB ID: ${escapeHtml(player.fbID ?? '—')} • Boss: ${player.beatBoss ? 'Yes' : 'No'}</div>
+                                <div class="playerbase-role-tags">
+                                    ${lockedOwner ? '<span class="player-role-pill role-owner">owner</span>' : ''}
+                                    ${selectedRoles.filter(r => r !== 'owner').map(r => `<span class="player-role-pill role-${String(r).toLowerCase()}">${escapeHtml(r)}</span>`).join('')}
+                                </div>
+                            </div>
+                            <div class="playerbase-controls">
+                                ${canEditRoles ? `<button class="secondary-btn player-edit-toggle" type="button" data-fbid="${escapeHtml(player.fbID ?? '')}">Edit Roles</button>` : ''}
+                                <div class="playerbase-role-editor ${canEditRoles ? 'hidden-role-editor' : 'hidden-role-editor locked-view'}" data-fbid="${escapeHtml(player.fbID ?? '')}">
+                                    <div class="player-role-dropdown" role="group" aria-label="Roles for ${escapeHtml(player.username || 'Unknown')}">
+                                        ${roleOptions.map(option => `
+                                            <label class="player-role-option ${option === 'admin' && !canAssignAdmin ? 'disabled-option' : ''}">
+                                                <input type="checkbox" class="player-role-checkbox" data-role="${option}" ${selectedRoles.includes(option) ? 'checked' : ''} ${option === 'admin' && !canAssignAdmin ? 'disabled' : ''}>
+                                                <span>${option}</span>
+                                            </label>
+                                        `).join('')}
+                                    </div>
+                                    ${canEditRoles ? `<button class="secondary-btn player-role-save" type="button" data-fbid="${escapeHtml(player.fbID ?? '')}">Save Roles</button>` : ''}
+                                </div>
+                                ${lockedOwner ? '<div class="player-owner-lock">owner locked</div>' : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                if (canEditRoles) listEl.querySelectorAll('.player-edit-toggle').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const fbid = btn.getAttribute('data-fbid');
+                        const editor = listEl.querySelector(`.playerbase-role-editor[data-fbid="${CSS.escape(fbid)}"]`);
+                        if (!editor) return;
+                        editor.classList.toggle('hidden-role-editor');
+                        btn.classList.toggle('active');
+                        btn.textContent = editor.classList.contains('hidden-role-editor') ? 'Edit Roles' : 'Hide Roles';
+                    });
+                });
+
+                if (canEditRoles) listEl.querySelectorAll('.player-role-save').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const fbid = btn.getAttribute('data-fbid');
+                        const editor = listEl.querySelector(`.playerbase-role-editor[data-fbid="${CSS.escape(fbid)}"]`);
+                        if (!editor) return;
+
+                        const roles = Array.from(editor.querySelectorAll('.player-role-checkbox'))
+                            .filter(input => input.checked)
+                            .map(input => input.getAttribute('data-role'));
+
+                        btn.disabled = true;
+                        try {
+                            const res = await fetch('/admin/updateRole', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ fbID: Number(fbid), roles })
+                            });
+                            const data = await res.json();
+                            if (!data.ok) throw new Error(data.error || 'Failed to update role');
+                            await loadPlayers();
+                        } catch (error) {
+                            console.error('Role update error:', error);
+                            alert(error.message || 'Failed to update role');
+                        } finally {
+                            btn.disabled = false;
+                        }
+                    });
+                });
+            }
+
+            function applyFilter() {
+                const query = (searchEl?.value || '').trim().toLowerCase();
+                if (!query) return render(allPlayers);
+
+                const filtered = allPlayers.filter(player => {
+                    const username = String(player.username || '').toLowerCase();
+                    const role = String(player.role || '').toLowerCase();
+                    const fbID = String(player.fbID || '').toLowerCase();
+                    return username.includes(query) || role.includes(query) || fbID.includes(query);
+                });
+                render(filtered);
+            }
+
+            async function loadPlayers() {
+                if (!listEl) return;
+                countEl.textContent = '';
+                listEl.innerHTML = '';
+                try {
+                    const res = await fetch('/playerbase/data');
+                    if (!res.ok) {
+                        throw new Error(`Playerbase request failed (${res.status}). Restart the server if this route is unavailable.`);
+                    }
+                    const contentType = res.headers.get('content-type') || '';
+                    if (!contentType.includes('application/json')) {
+                        throw new Error('Playerbase returned a non-JSON response. The server may need to be restarted.');
+                    }
+                    const data = await res.json();
+                    if (!data.ok) throw new Error(data.error || 'Failed to load playerbase');
+                    allPlayers = Array.isArray(data.players) ? data.players : [];
+                    applyFilter();
+                } catch (error) {
+                    console.error('Playerbase load error:', error);
+                    listEl.innerHTML = '<div class="playerbase-empty error">Unable to load playerbase.</div>';
+                    countEl.textContent = 'Error';
+                }
+            }
+
+            refreshBtn?.addEventListener('click', loadPlayers);
+            searchEl?.addEventListener('input', applyFilter);
+            loadProfilePicture().catch(error => console.error('Profile picture load error:', error));
+            if (canViewPlayers) loadPlayers();
+        })();
+    </script>
+</body>
+
+</html>

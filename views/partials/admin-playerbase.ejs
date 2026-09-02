@@ -1,0 +1,168 @@
+<div id="adminPlayerbasePanel" class="admin-playerbase-panel" aria-label="Player base and roles">
+    <button id="adminPlayerbaseTab" class="admin-playerbase-tab" type="button" aria-expanded="false" aria-controls="adminPlayerbaseContent">Players</button>
+
+    <div id="adminPlayerbaseContent" class="admin-playerbase-content" aria-hidden="true">
+        <div class="admin-sidebar-header">
+            <div>
+                <p class="admin-sidebar-kicker">Admin Tools</p>
+                <h2>Player Base</h2>
+            </div>
+            <div class="admin-sidebar-actions">
+                <button id="refreshPlayerBaseBtn" class="secondary-btn admin-refresh-btn" type="button">Refresh</button>
+            </div>
+        </div>
+
+        <div class="admin-sidebar-body">
+            <div class="admin-sidebar-search">
+                <input id="playerBaseSearch" type="text" placeholder="Search username, id, or role..." autocomplete="off">
+            </div>
+
+            <div class="admin-sidebar-meta">
+                <span id="playerBaseCount"></span>
+            </div>
+
+            <div id="playerBaseList" class="playerbase-list" role="list"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const panel = document.getElementById('adminPlayerbasePanel');
+        if (!panel) return;
+
+        const tab = document.getElementById('adminPlayerbaseTab');
+        const content = document.getElementById('adminPlayerbaseContent');
+        const listEl = document.getElementById('playerBaseList');
+        const countEl = document.getElementById('playerBaseCount');
+        const searchEl = document.getElementById('playerBaseSearch');
+        const refreshBtn = document.getElementById('refreshPlayerBaseBtn');
+        const canAssignAdmin = document.body.dataset.canAssignAdmin === 'true';
+        let allPlayers = [];
+        let loadedOnce = false;
+
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+
+        function setOpen(open) {
+            panel.classList.toggle('open', open);
+            tab.setAttribute('aria-expanded', open ? 'true' : 'false');
+            content.setAttribute('aria-hidden', open ? 'false' : 'true');
+            if (open && !loadedOnce) loadPlayers();
+        }
+
+        function render(players) {
+            if (!listEl) return;
+
+            if (!players.length) {
+                listEl.innerHTML = '<div class="playerbase-empty">No logged-in players found.</div>';
+                countEl.textContent = '0 players';
+                return;
+            }
+
+            countEl.textContent = players.length + ' player' + (players.length === 1 ? '' : 's');
+            listEl.innerHTML = players.map(player => {
+                const selectedRoles = Array.isArray(player.roles) && player.roles.length ? player.roles : String(player.role || 'player').split(',').map(r => r.trim()).filter(Boolean);
+                const lockedOwner = !!player.isOwner;
+                const roleOptions = ['player', 'moderator', 'admin'];
+                return `
+                    <div class="playerbase-row" role="listitem">
+                        <div class="playerbase-main">
+                            <div class="playerbase-name">${escapeHtml(player.username || 'Unknown')}</div>
+                            <div class="playerbase-sub">FB ID: ${escapeHtml(player.fbID ?? '—')} • Boss: ${player.beatBoss ? 'Yes' : 'No'}</div>
+                            <div class="playerbase-role-tags">
+                                ${lockedOwner ? '<span class="player-role-pill role-owner">owner</span>' : ''}
+                                ${selectedRoles.filter(r => r !== 'owner').map(r => `<span class="player-role-pill role-${String(r).toLowerCase()}">${escapeHtml(r)}</span>`).join('')}
+                            </div>
+                        </div>
+                        <div class="playerbase-controls">
+                            <div class="playerbase-role-editor">
+                                <select class="player-role-select" multiple size="3" data-fbid="${escapeHtml(player.fbID ?? '')}" aria-label="Roles for ${escapeHtml(player.username || 'Unknown')}">
+                                    ${roleOptions.map(option => `<option value="${option}" ${selectedRoles.includes(option) ? 'selected' : ''} ${option === 'admin' && !canAssignAdmin ? 'disabled' : ''}>${option}</option>`).join('')}
+                                </select>
+                                <button class="secondary-btn player-role-save" type="button" data-fbid="${escapeHtml(player.fbID ?? '')}">Save Roles</button>
+                            </div>
+                            ${lockedOwner ? '<div class="player-owner-lock">owner locked</div>' : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            listEl.querySelectorAll('.player-role-save').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const fbid = btn.getAttribute('data-fbid');
+                    const select = listEl.querySelector(`.player-role-select[data-fbid="${CSS.escape(fbid)}"]`);
+                    if (!select) return;
+
+                    const roles = Array.from(select.selectedOptions).map(option => option.value);
+
+                    btn.disabled = true;
+                    try {
+                        const res = await fetch('/admin/updateRole', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ fbID: Number(fbid), roles })
+                        });
+                        const data = await res.json();
+                        if (!data.ok) throw new Error(data.error || 'Failed to update role');
+                        await loadPlayers();
+                    } catch (error) {
+                        console.error('Role update error:', error);
+                        alert(error.message || 'Failed to update role');
+                    } finally {
+                        btn.disabled = false;
+                    }
+                });
+            });
+        }
+
+        function applyFilter() {
+            const query = (searchEl?.value || '').trim().toLowerCase();
+            if (!query) return render(allPlayers);
+
+            const filtered = allPlayers.filter(player => {
+                const username = String(player.username || '').toLowerCase();
+                const role = String(player.role || '').toLowerCase();
+                const fbID = String(player.fbID || '').toLowerCase();
+                return username.includes(query) || role.includes(query) || fbID.includes(query);
+            });
+            render(filtered);
+        }
+
+        async function loadPlayers() {
+            if (!listEl) return;
+            countEl.textContent = '';
+            listEl.innerHTML = '';
+            try {
+                const res = await fetch('/admin/playerbase');
+                const data = await res.json();
+                if (!data.ok) throw new Error(data.error || 'Failed to load playerbase');
+                allPlayers = Array.isArray(data.players) ? data.players : [];
+                loadedOnce = true;
+                applyFilter();
+            } catch (error) {
+                console.error('Playerbase load error:', error);
+                listEl.innerHTML = '<div class="playerbase-empty error">Unable to load playerbase.</div>';
+                countEl.textContent = 'Error';
+            }
+        }
+
+        tab?.addEventListener('click', () => setOpen(!panel.classList.contains('open')));
+        refreshBtn?.addEventListener('click', loadPlayers);
+        searchEl?.addEventListener('input', applyFilter);
+
+        document.addEventListener('click', (e) => {
+            if (!panel.classList.contains('open')) return;
+            if (panel.contains(e.target)) return;
+            setOpen(false);
+        });
+
+        setOpen(false);
+    })();
+</script>

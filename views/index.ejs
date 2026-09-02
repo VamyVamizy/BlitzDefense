@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blitz Defence</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body data-is-admin="<%= isAdmin ? 'true' : 'false' %>"
+    data-can-assign-admin="<%= canAssignAdmin ? 'true' : 'false' %>">
+
+    <!-- Settings button -->
+    <button id="settingsCornerBtn" class="settings-corner-btn" onclick="openSettings()"
+        title="Settings">&#9881;</button>
+
+    <!-- Audio elements -->
+    <audio id="backgroundMusic" loop preload="auto">
+        <source src="music/Background.m4a" type="audio/mp4">
+    </audio>
+
+    <audio id="daveGrohl" loop preload="auto">
+        <source src="music/daveGrohl.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="demonicDaveGrohl" loop preload="auto">
+        <source src="music/demonicDaveGrohl.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="enemyHit" preload="auto">
+        <source src="sfx/enemyHit.wav" type="audio/wav">
+    </audio>
+
+    <audio id="enemyShot" preload="auto">
+        <source src="sfx/enemyShot.wav" type="audio/wav">
+    </audio>
+
+    <audio id="playerHit" preload="auto">
+        <source src="sfx/playerHit.wav" type="audio/wav">
+    </audio>
+
+    <audio id="playerShot" preload="auto">
+        <source src="sfx/playerShot.wav" type="audio/wav">
+    </audio>
+
+    <audio id="railgunShot" preload="auto">
+        <source src="sfx/railgunShot.wav" type="audio/wav">
+    </audio>
+
+    <audio id="slasherDash" preload="auto">
+        <source src="sfx/slasherDash.wav" type="audio/wav">
+    </audio>
+
+    <audio id="playerDefeat" preload="auto">
+        <source src="sfx/playerDefeat.wav" type="audio/wav">
+    </audio>
+
+    <audio id="bossDefeat" preload="auto">
+        <source src="sfx/bossDefeat.wav" type="audio/wav">
+    </audio>
+
+    <audio id="levelUp" preload="auto">
+        <source src="sfx/level_up.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="megaman" preload="auto">
+        <source src="sfx/megaman.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="plankton" preload="auto">
+        <source src="sfx/plankton.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="mikuBeam" preload="auto">
+        <source src="sfx/mikubeam.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="scaryDiscord" preload="auto">
+        <source src="sfx/scaryDiscord.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="flintChicken" preload="auto">
+        <source src="sfx/flintChicken.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="getOffFloor" preload="auto">
+        <source src="sfx/get%20off%20the%20floor.wav" type="audio/wav">
+    </audio>
+
+    <audio id="settingOn" preload="auto">
+        <source src="sfx/soundon.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="settingOff" preload="auto">
+        <source src="sfx/lightswitch.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="wizardFireball" preload="auto">
+        <source src="sfx/fireball.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="wizardIceStorm" preload="auto">
+        <source src="sfx/ice.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="wizardArcaneSurge" preload="auto">
+        <source src="sfx/spawn.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="wizardEarthquake" preload="auto">
+        <source src="sfx/groundBreak.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="wizardFog" preload="auto">
+        <source src="sfx/stinky.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="wizardDoubleStrike" preload="auto">
+        <source src="sfx/shadowWizards.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="thinkFast" preload="auto">
+        <source src="sfx/thinkFast.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="genFinished" preload="auto">
+        <source src="sfx/genFinished.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="nerfgun" preload="auto">
+        <source src="sfx/nerfgun.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="fireworks" preload="auto">
+        <source src="sfx/fireworks.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="diceRoll" preload="auto">
+        <source src="sfx/dice_roll.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="war" preload="auto">
+        <source src="sfx/war.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="vats" preload="auto">
+        <source src="sfx/vats.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="noTeacher" preload="auto">
+        <source src="sfx/noTeacher.mp3" type="audio/mpeg">
+    </audio>
+
+
+    <div id="gameContainer">
+
+        <canvas id="gameCanvas" width="1300" height="800"></canvas>
+
+
+        <!-- Game UI -->
+        <div id="gameUI">
+
+            <div id="waves">
+                Wave:
+                <span id="currentWave">1</span>
+                /
+                <span id="totalWaves"></span>
+            </div>
+
+            <div id="health">
+                Shield:
+                <span id="healthValue">250</span>
+                /
+                <span id="healthMaxValue">250</span>
+            </div>
+
+            <div id="money">
+                Digipogs:
+                <span id="moneyValue">500</span>
+            </div>
+
+            <div id="difficulty">
+                Difficulty:
+                <span id="difficultyValue">Normal</span>
+            </div>
+
+            <button id="speedToggleBtn" class="speed-toggle-btn" type="button" aria-pressed="false">
+                Speed x1
+            </button>
+
+        </div>
+
+
+        <!-- PAYMENT MODAL -->
+        <% if (!isAdmin) { %>
+
+            <div id="paymentModal" class="payment-modal hidden">
+
+                <div class="payment-box">
+
+                    <button type="button" id="hide-payment" onclick="hidePayment()" aria-label="Close payment">
+                        ×
+                    </button>
+
+                    <div class="payment-icon">
+                        💰
+                    </div>
+
+                    <h2>Game Entry</h2>
+
+                    <p class="payment-subtitle">
+                        Enter your PIN to join the game
+                    </p>
+
+                    <div class="payment-field">
+
+                        <label for="pin">
+                            PIN
+                        </label>
+
+                        <input id="pin" type="password" pattern="\d*" inputmode="numeric" maxlength="6"
+                            placeholder="Enter your PIN" oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+
+                    </div>
+
+                    <div class="payment-price">
+
+                        <span>
+                            Entry Cost
+                        </span>
+
+                        <strong>
+                            <%= gamePrice %> Digipogs
+                        </strong>
+
+                    </div>
+
+                    <button type="button" class="payment-button" onclick="doTransfer();">
+
+                        Pay & Play
+
+                    </button>
+
+                </div>
+
+            </div>
+
+            <% } %>
+
+
+                <!-- STORE -->
+                <div id="storeDock" class="hidden closed">
+
+                    <div id="storePanels" class="store-panels">
+
+                        <div id="towerShop">
+
+                            <div class="tower-shop-header">
+
+                                <span class="tower-shop-label">
+                                    Tower Shop
+                                </span>
+
+                                <span id="towerShopHint" class="tower-shop-hint">
+                                    Select a tower to buy, then click the map to place it.
+                                </span>
+
+                            </div>
+
+                            <div id="towerShopCards" class="tower-shop-grid"></div>
+
+                        </div>
+
+
+                        <div id="towerUpgradePanel" class="inactive">
+
+                            <div id="towerUpgradeTitle" class="tower-upgrade-title">
+                                No Tower Selected
+                            </div>
+
+                            <div id="towerUpgradeBody" class="tower-upgrade-body">
+                                Click a placed tower to view upgrades.
+                            </div>
+
+                            <div class="tower-upgrade-actions">
+
+                                <button id="towerUpgradeBtn" class="tower-upgrade-btn" disabled>
+
+                                    Upgrade
+
+                                </button>
+
+                                <button id="towerSellBtn" class="tower-sell-btn" disabled>
+
+                                    Sell
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <button id="storeToggleBtn" class="store-toggle-btn" type="button" aria-expanded="false"
+                        aria-controls="towerShop towerUpgradePanel">
+
+                        Store
+
+                    </button>
+
+                </div>
+
+
+                <!-- START MENU -->
+                <div id="startMenu" class="menu-overlay">
+
+                    <div class="menu-panel">
+
+                        <h1>Blitz Defence</h1>
+
+                        <p class="subtitle">
+                            Place towers to defend against waves of Blitzing Pixels.
+                        </p>
+
+
+                        <% if (isAdmin) { %>
+
+                            <button id="adminPanelBtn" onclick="window.location.href='/admin'">
+
+                                Admin Panel
+
+                            </button>
+
+                            <% } %>
+
+
+                                <div class="menu-content">
+
+                                    <div class="control-list">
+
+                                        <h3>How to Play</h3>
+
+                                        <div class="control-item">
+                                            • Drag towers onto the map to place them
+                                        </div>
+
+                                        <div class="control-item">
+                                            • Earn currency by defeating enemies
+                                        </div>
+
+                                        <div class="control-item">
+                                            • Each enemy that reaches your base will deplete your shield
+                                        </div>
+
+                                        <div class="control-item">
+                                            • Run out of shield - GAME OVER!
+                                        </div>
+
+                                        <div class="control-item">
+                                            • Upgrade towers to increase power
+                                        </div>
+
+                                        <div class="control-item">
+                                            • Survive waves and defeat bosses!
+                                        </div>
+
+                                        <button id="mapBtn" class="customize-btn">
+                                            Select Map
+                                        </button>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div class="start-menu-bottom">
+
+                                    <div class="difficulty-selector">
+
+                                        <h3>Difficulty</h3>
+
+                                        <div class="difficulty-options" role="group" aria-label="Difficulty selection">
+
+                                            <button class="difficulty-btn" type="button" data-difficulty="easy">
+
+                                                Easy
+
+                                            </button>
+
+                                            <button class="difficulty-btn" type="button" data-difficulty="normal">
+
+                                                Normal
+
+                                            </button>
+
+                                            <button class="difficulty-btn" type="button" data-difficulty="hard">
+
+                                                Hard
+
+                                            </button>
+
+                                            <button class="difficulty-btn" type="button" data-difficulty="nightmare">
+
+                                                Nightmare
+
+                                            </button>
+
+                                        </div>
+
+                                        <p id="difficultyDescription" class="difficulty-description">
+
+                                            The intended baseline experience.
+
+                                        </p>
+
+                                    </div>
+
+
+                                    <button id="startBtn" class="primary-btn">
+
+                                        START GAME
+
+                                    </button>
+
+
+                                    <button class="secondary-btn" onclick="window.location.href='/playerbase'">
+
+                                        PLAYER BASE
+
+                                    </button>
+
+
+                                    <button class="settings-menu-btn" onclick="openSettings()">
+
+                                        &#9881; Settings
+
+                                    </button>
+
+                                </div>
+
+
+                                <p class="footer-text">
+                                    Mouse to aim • Customize before starting
+                                </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- PAUSE MENU -->
+                <div id="pauseMenu" class="menu-overlay hidden">
+
+                    <div class="menu-panel">
+
+                        <h1>PAUSED</h1>
+
+                        <div class="menu-buttons">
+
+                            <button id="resumeBtn" class="primary-btn">
+
+                                Resume
+
+                            </button>
+
+                            <button id="pauseRestartBtn" class="secondary-btn">
+
+                                Restart
+
+                            </button>
+
+                            <button class="secondary-btn" onclick="openSettings()">
+
+                                &#9881; Settings
+
+                            </button>
+
+                            <button id="quitBtn" class="secondary-btn">
+
+                                QUIT TO MENU
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- GAME OVER MENU -->
+                <div id="gameOver" class="menu-overlay hidden">
+
+                    <div class="menu-panel">
+
+                        <h1 class="game-over-title">
+                            GAME OVER!
+                        </h1>
+
+                        <div class="menu-buttons">
+
+                            <button id="restartBtn" class="primary-btn">
+
+                                PLAY AGAIN
+
+                            </button>
+
+                            <button id="mainMenuBtn" class="secondary-btn">
+
+                                MAIN MENU
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- SETTINGS MODAL -->
+                <div id="settingsModal" class="menu-overlay hidden" onclick="handleSettingsOverlayClick(event)">
+
+                    <div class="menu-panel settings-panel">
+
+                        <h2 class="settings-title">
+                            Settings
+                        </h2>
+
+
+                        <div class="settings-row">
+
+                            <div class="settings-info">
+
+                                <span class="settings-label">
+                                    Wave Start
+                                </span>
+
+                                <span class="settings-desc">
+                                    Choose when new waves begin
+                                </span>
+
+                            </div>
+
+                            <div class="toggle-group">
+
+                                <button class="toggle-btn" id="waveManualBtn" onclick="setSetting('waveAuto', false)">
+
+                                    Manual
+
+                                </button>
+
+                                <button class="toggle-btn" id="waveAutoBtn" onclick="setSetting('waveAuto', true)">
+
+                                    Auto
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="settings-row">
+
+                            <div class="settings-info">
+
+                                <span class="settings-label">
+                                    Tooltips
+                                </span>
+
+                                <span class="settings-desc">
+                                    Show helpful placement and tower info while you play
+                                </span>
+
+                            </div>
+
+                            <div class="toggle-group">
+
+                                <button class="toggle-btn" id="tooltipsOffBtn" onclick="setSetting('tooltips', false)">
+
+                                    Off
+
+                                </button>
+
+                                <button class="toggle-btn" id="tooltipsOnBtn" onclick="setSetting('tooltips', true)">
+
+                                    On
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="settings-row">
+
+                            <div class="settings-info">
+
+                                <span class="settings-label">
+                                    Sound
+                                </span>
+
+                                <span class="settings-desc">
+                                    Enable or disable all music and sound effects
+                                </span>
+
+                            </div>
+
+                            <div class="toggle-group">
+
+                                <button class="toggle-btn" id="soundOnBtn" onclick="setSetting('sound', true)">
+
+                                    On
+
+                                </button>
+
+                                <button class="toggle-btn" id="soundOffBtn" onclick="setSetting('sound', false)">
+
+                                    Off
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+
+                        <button class="primary-btn" style="margin-top:20px" onclick="closeSettings()">
+
+                            Done
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- VICTORY MENU -->
+                <div id="victoryMenu" class="menu-overlay hidden">
+
+                    <div class="menu-panel">
+
+                        <h1 class="victory-title">
+                            Victory!
+                        </h1>
+
+                        <p id="victoryMessage" class="victory-message hidden">
+                        </p>
+
+                        <div class="menu-buttons">
+
+                            <button id="endlessBtn" class="secondary-btn">
+
+                                ENDLESS MODE
+
+                            </button>
+
+                            <button id="victoryRestartBtn" class="secondary-btn">
+
+                                PLAY AGAIN
+
+                            </button>
+
+                            <button id="victoryMainMenuBtn" class="secondary-btn">
+
+                                MAIN MENU
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- SMITH CUTSCENE -->
+                <div id="smithCutscene" class="menu-overlay cutscene-overlay hidden">
+
+                    <div class="menu-panel cutscene-panel">
+
+                        <div class="cutscene-label">
+                            Smith
+                        </div>
+
+                        <div class="cutscene-art">
+
+                            <img id="smithCutsceneMainImage" class="cutscene-image primary-cutscene-image"
+                                src="/img/smith.png" alt="Smith">
+
+                            <img id="smithCutsceneSideImage" class="cutscene-image hidden" src="/img/prozac.png"
+                                alt="Prozac">
+
+                        </div>
+
+                        <div class="dialogue-box">
+
+                            <div class="dialogue-speaker">
+                                Smith
+                            </div>
+
+                            <div id="smithCutsceneDialogue" class="dialogue-text">
+
+                                Smith lowers his weapon and waits for your choice.
+
+                            </div>
+
+                        </div>
+
+                        <div class="menu-buttons cutscene-actions">
+
+                            <button id="smithSpareBtn" class="primary-btn">
+
+                                Spare Smith
+
+                            </button>
+
+                            <button id="smithRefuseBtn" class="secondary-btn">
+
+                                Don't spare Smith
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- MAP SELECTION MENU -->
+                <div id="mapSelectionMenu" class="menu-overlay hidden">
+
+                    <div class="menu-panel map-selection-panel">
+
+                        <h2>
+                            Select Map
+                        </h2>
+
+
+                        <div id="mapGrid" class="map-grid">
+                            <!-- Maps populated by JavaScript -->
+                        </div>
+
+
+                        <div class="map-navigation">
+
+                            <button id="prevPageBtn" class="nav-btn">
+
+                                ◀ Previous
+
+                            </button>
+
+                            <span id="pageIndicator" class="page-indicator">
+
+                                Page 1 of 2
+
+                            </span>
+
+                            <button id="nextPageBtn" class="nav-btn">
+
+                                Next ▶
+
+                            </button>
+
+                        </div>
+
+
+                        <button id="cancelMapSelection" class="secondary-btn">
+
+                            Cancel
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+    </div>
+    <!-- END GAME CONTAINER -->
+
+
+    <!-- FINAL BOSS HEALTH BAR -->
+    <div id="bossHealthBar" class="boss-health-bar">
+
+        <div id="bossName" class="boss-name">
+            Mr. Smith - The Final Boss
+        </div>
+
+        <div id="bossHealthFill" class="boss-health-fill"></div>
+
+        <div id="bossHealthText" class="boss-health-text">
+            1000 / 1000
+        </div>
+
+    </div>
+
+
+    <!-- JAVASCRIPT -->
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script src="/game/player.js"></script>
+    <script src="/game/enemy.js"></script>
+    <script src="/game/game.js"></script>
+    <script src="/game/maps.js"></script>
+    <script src="/game/towers.js"></script>
+    <script src="/game/waves.js"></script>
+    <script src="/game/main.js"></script>
+
+
+    <script>
+
+        // Expose admin flag
+        window.isAdmin = document.body.dataset.isAdmin === 'true';
+
+
+        // Settings defaults
+        const _defaultSettings = {
+            waveAuto: false,
+            tooltips: true,
+            sound: true
+        };
+
+
+        function _loadSettings() {
+
+            try {
+
+                return Object.assign(
+                    {},
+                    _defaultSettings,
+                    JSON.parse(
+                        localStorage.getItem(
+                            'blitzDefenceSettings'
+                        ) || '{}'
+                    )
+                );
+
+            } catch (e) {
+
+                return Object.assign(
+                    {},
+                    _defaultSettings
+                );
+
+            }
+
+        }
+
+
+        function _saveSettings(s) {
+
+            localStorage.setItem(
+                'blitzDefenceSettings',
+                JSON.stringify(s)
+            );
+
+        }
+
+
+        function _applySettingsToGame(s) {
+
+            if (window.game) {
+
+                window.game.autoStart = s.waveAuto;
+
+                window.game.showTooltips = s.tooltips;
+
+                window.game.soundEnabled = s.sound !== false;
+
+                if (typeof window.game.applySoundSetting === 'function') {
+
+                    window.game.applySoundSetting();
+
+                }
+
+            }
+
+        }
+
+
+        function _syncToggleUI(s) {
+
+            document
+                .getElementById('waveManualBtn')
+                .classList
+                .toggle('active', !s.waveAuto);
+
+            document
+                .getElementById('waveAutoBtn')
+                .classList
+                .toggle('active', s.waveAuto);
+
+            document
+                .getElementById('tooltipsOnBtn')
+                .classList
+                .toggle('active', s.tooltips !== false);
+
+            document
+                .getElementById('tooltipsOffBtn')
+                .classList
+                .toggle('active', s.tooltips === false);
+
+            document
+                .getElementById('soundOnBtn')
+                .classList
+                .toggle('active', s.sound !== false);
+
+            document
+                .getElementById('soundOffBtn')
+                .classList
+                .toggle('active', s.sound === false);
+
+        }
+
+
+        function _playToggleSound(value) {
+
+            const sfx = document.getElementById(
+                value
+                    ? 'settingOn'
+                    : 'settingOff'
+            );
+
+            if (sfx) {
+
+                sfx.currentTime = 0;
+
+                sfx.play().catch(() => { });
+
+            }
+
+        }
+
+
+        function setSetting(key, value) {
+
+            const s = _loadSettings();
+
+            if (s[key] !== value) {
+
+                _playToggleSound(value);
+
+            }
+
+            s[key] = value;
+
+            _saveSettings(s);
+
+            _applySettingsToGame(s);
+
+            _syncToggleUI(s);
+
+        }
+
+
+        function openSettings() {
+
+            const s = _loadSettings();
+
+            _applySettingsToGame(s);
+
+            _syncToggleUI(s);
+
+            document
+                .getElementById('settingsModal')
+                .classList
+                .remove('hidden');
+
+        }
+
+
+        function closeSettings() {
+
+            document
+                .getElementById('settingsModal')
+                .classList
+                .add('hidden');
+
+        }
+
+
+        function handleSettingsOverlayClick(e) {
+
+            if (
+                e.target === document.getElementById(
+                    'settingsModal'
+                )
+            ) {
+
+                closeSettings();
+
+            }
+
+        }
+
+
+        document.addEventListener(
+            'DOMContentLoaded',
+            () => {
+
+                const s = _loadSettings();
+
+                _syncToggleUI(s);
+
+
+                [
+                    'startBtn',
+                    'restartBtn',
+                    'pauseRestartBtn',
+                    'victoryRestartBtn'
+                ].forEach(id => {
+
+                    const el = document.getElementById(id);
+
+                    if (el) {
+
+                        el.addEventListener(
+                            'click',
+                            () => {
+
+                                setTimeout(
+                                    () => _applySettingsToGame(
+                                        _loadSettings()
+                                    ),
+                                    50
+                                );
+
+                            }
+                        );
+
+                    }
+
+                });
+
+
+                // Admins do not see payment screen
+                if (window.isAdmin) {
+
+                    const paymentModal =
+                        document.getElementById(
+                            'paymentModal'
+                        );
+
+                    if (paymentModal) {
+
+                        paymentModal.style.display =
+                            'none';
+
+                    }
+
+                }
+
+            }
+        );
+
+    </script>
+
+</body>
+
+</html>
