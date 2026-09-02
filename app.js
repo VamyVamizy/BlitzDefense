@@ -127,6 +127,7 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'your_secret_key';
 const AUTH_URL = process.env.AUTH_URL || 'http://localhost:420/oauth';
 const THIS_URL = process.env.THIS_URL || `http://localhost:${PORT}`;
 const API_KEY = process.env.API_KEY || 'your_api_key';
+const ADMIN_DIGIPOG_AMOUNT = 999999;
 const gameSessions = new Map(); // sessionId -> gameData
 
 //middleware
@@ -276,6 +277,7 @@ app.get('/', isAuthenticated, (req, res) => {
         res.render('index', {
             gamePrice: price,
             isAdmin: isAdmin,
+            adminDigipogs: isAdmin ? (req.session.adminDigipogs || 0) : 0,
             userRole: getUserRole(req),
             canAssignAdmin: canAssignAdminRole(req)
         });
@@ -698,6 +700,14 @@ app.post('/recordGameEvent', isAuthenticated, (req, res) => {
 app.get('/admin', isAuthenticated, requireRole('admin'), (req, res) => {
     getCurrentPrice((price) => {
         res.render('admin', { currentPrice: price, user: req.session.user })
+    });
+});
+
+app.post('/admin/setDigipogs', isAuthenticated, requireRole('admin'), (req, res) => {
+    req.session.adminDigipogs = ADMIN_DIGIPOG_AMOUNT;
+    req.session.save((err) => {
+        if (err) return res.status(500).json({ ok: false, error: 'Failed to save Digipog setting' });
+        res.json({ ok: true, amount: ADMIN_DIGIPOG_AMOUNT });
     });
 });
 

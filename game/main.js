@@ -271,7 +271,7 @@ class Game {
         this.level = 1;
         this.sheild = 250;
         this.maxSheild = 250;
-        this.money = 500;
+        this.money = this.getStartingMoney();
         this.expToNextLevel = 100;
         this.showLevelUp = false;
 
@@ -433,6 +433,11 @@ class Game {
         // this.loadPlayerCustomization();
 
         this.gameLoop();
+    }
+
+    getStartingMoney() {
+        const adminDigipogs = Number(document.body.dataset.adminDigipogs);
+        return adminDigipogs > 0 ? adminDigipogs : 500;
     }
 
     showStartMenu() {
@@ -4901,7 +4906,7 @@ class Game {
         this.level = 1;
         this.sheild = 250;
         this.maxSheild = 250;
-        this.money = 500;
+        this.money = this.getStartingMoney();
         this.expToNextLevel = 100;
         this.waveNumber = 1;
         this.waveRequirement = 300;

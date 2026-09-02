@@ -29,9 +29,31 @@
                 <button type="button" onclick="window.location.href='/'">To Game</button>
             </form>
 
+            <div class="admin-digipog-tools">
+                <h2>Admin Game Tools</h2>
+                <button id="setDigipogsBtn" type="button">Set My Digipogs High</button>
+                <span id="setDigipogsStatus" role="status"></span>
+            </div>
+
 
         </div>
     </div>
+    <script>
+        document.getElementById('setDigipogsBtn').addEventListener('click', async () => {
+            const button = document.getElementById('setDigipogsBtn');
+            const status = document.getElementById('setDigipogsStatus');
+            button.disabled = true;
+            try {
+                const response = await fetch('/admin/setDigipogs', { method: 'POST' });
+                const data = await response.json();
+                if (!response.ok || !data.ok) throw new Error(data.error || 'Unable to set Digipogs');
+                window.location.href = '/';
+            } catch (error) {
+                status.textContent = error.message;
+                button.disabled = false;
+            }
+        });
+    </script>
 </body>
 
 </html>

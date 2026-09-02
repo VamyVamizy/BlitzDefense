@@ -9,7 +9,8 @@
 </head>
 
 <body data-is-admin="<%= isAdmin ? 'true' : 'false' %>"
-    data-can-assign-admin="<%= canAssignAdmin ? 'true' : 'false' %>">
+    data-can-assign-admin="<%= canAssignAdmin ? 'true' : 'false' %>"
+    data-admin-digipogs="<%= adminDigipogs || 0 %>">
 
     <!-- Settings button -->
     <button id="settingsCornerBtn" class="settings-corner-btn" onclick="openSettings()"
