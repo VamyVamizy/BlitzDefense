@@ -437,7 +437,11 @@ class Game {
 
     getStartingMoney() {
         const adminDigipogs = Number(document.body.dataset.adminDigipogs);
-        return adminDigipogs > 0 ? adminDigipogs : 500;
+        return adminDigipogs > 0 ? adminDigipogs : 750;
+    }
+
+    getWaveRewardMultiplier() {
+        return this.waveNumber <= 30 ? 0.65 : 0.25;
     }
 
     showStartMenu() {
@@ -3565,6 +3569,8 @@ class Game {
         if (this.waveNumber > 40) {
             applyEndlessScaling(enemy, this.waveNumber);
         }
+
+        enemy.worth = Math.max(0, Math.round(enemy.worth * this.getWaveRewardMultiplier()));
 
         // Don't apply enhancements to Smith - he's already perfect
         if (EnemyClass.name !== 'Smith') {
