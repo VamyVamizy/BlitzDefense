@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 //Some don't work on intended or just need some touching up before being added to the shop
-const AVAILABLE_TOWER_SHOP_KEYS = new Set(['shooter', 'blaster', 'wizard', 'hacker', 'overlord', 'generator', 'sentinel', 'railgun', 'hero', 'grohl', 'gambler', 'bomber', 'silly', 'oppenheimer', 'renegade']);
+const AVAILABLE_TOWER_SHOP_KEYS = new Set(['shooter', 'blaster', 'wizard', 'hacker', 'overlord', 'generator', 'sentinel', 'railgun', 'hero', 'gambler', 'bomber', 'silly', 'oppenheimer', 'renegade']);
 
 const DIFFICULTY_PRESETS = {
     easy: {
@@ -392,6 +392,7 @@ class Game {
         this.lastTime = 0;
         this.waveNumber = 1;
         this.waveStartTime = Date.now();
+        this.waveCompletionNoticeTimeout = null;
 
         // Enemy tracking
         this.totalEnemiesInWave = 0;
@@ -441,7 +442,27 @@ class Game {
     }
 
     getWaveRewardMultiplier() {
-        return this.waveNumber <= 30 ? 0.65 : 0.25;
+        return this.waveNumber <= 30 ? 0.5 : 0.15;
+    }
+
+    getWaveCompletionReward(waveNumber) {
+        return 50 + (waveNumber * 10);
+    }
+
+    showWaveCompletionNotice(waveNumber, amount) {
+        const notice = document.getElementById('waveCompletionNotice');
+        if (!notice) return;
+
+        if (this.waveCompletionNoticeTimeout) {
+            clearTimeout(this.waveCompletionNoticeTimeout);
+        }
+
+        notice.textContent = `Wave Completed! Gained $${amount}`;
+        notice.classList.remove('hidden');
+        this.waveCompletionNoticeTimeout = setTimeout(() => {
+            notice.classList.add('hidden');
+            this.waveCompletionNoticeTimeout = null;
+        }, 3000);
     }
 
     showStartMenu() {
@@ -2930,7 +2951,7 @@ class Game {
     getHackerRoundReward(tower) {
         return Math.max(
             1,
-            Math.round((250 + this.waveNumber * 1.2) * (tower.hackRewardMultiplier || 1))
+            Math.round((250 + this.waveNumber * 1.2) * (tower.hackRewardMultiplier || 1) * 0.25)
         );
     }
 
@@ -3631,10 +3652,16 @@ class Game {
         this.enemiesAlive = this.enemies.length + this.tanks.length + this.sprinters.length + this.bosses.length;
 
         // Check if wave is complete (all enemies spawned and defeated)
-        if (this.enemiesSpawned >= this.totalEnemiesInWave && this.enemiesAlive === 0) {
+        if (this.enemiesSpawned >= this.totalEnemiesInWave && this.enemiesAlive === 0 && !this.waveComplete) {
             console.log(`Wave ${this.waveNumber} complete!`);
 
             const waveCompleteTime = Date.now() - this.waveStartTime;
+            const completedWaveNumber = this.waveNumber;
+            const waveReward = this.getWaveCompletionReward(completedWaveNumber);
+            this.waveComplete = true;
+            this.addMoney(waveReward);
+            this.showWaveCompletionNotice(completedWaveNumber, waveReward);
+            console.log(`Wave ${completedWaveNumber} completion reward: $${waveReward}`);
 
             // Check if this is the first completion of the final wave (offer endless mode)
             if (this.waveNumber >= this.totalWaves && !this.endlessMode) {
@@ -4224,7 +4251,16 @@ class Game {
                 if (!enemy || enemy.hp <= 0) return;
 
                 if (bullet.stunDuration > 0) {
+                    const reapplyCooldown = bullet.sourceTower?.type === 'silly'
+                        ? bullet.stunReapplyCooldown || 0
+                        : 0;
+                    if (reapplyCooldown > 0 && (enemy.sillyStunImmuneUntil || 0) > Date.now()) {
+                        return;
+                    }
                     enemy.stunTimer = Math.max(enemy.stunTimer || 0, bullet.stunDuration);
+                    if (reapplyCooldown > 0) {
+                        enemy.sillyStunImmuneUntil = Date.now() + reapplyCooldown;
+                    }
                 }
 
                 if (bullet.poisonDamage > 0 && bullet.poisonDuration > 0) {

@@ -165,7 +165,7 @@ const TOWER_TYPES = {
         range: 85,
         fireRate: 1200,
         stunChance: 1,
-        stunDuration: 2200,
+        stunDuration: 1400,
         stunRadius: 20,
         projectileCount: 1,
         projectileSpeed: 1,
@@ -318,7 +318,6 @@ const TOWER_UPGRADES = {
             apply: (tower) => {
                 tower.damage += 2;
                 addPierce(tower, 2);
-                scaleFireRate(tower, 0.7, 80);
             }
         },
         {
@@ -331,7 +330,6 @@ const TOWER_UPGRADES = {
             apply: (tower) => {
                 tower.damage += 3;
                 tower.range += 20;
-                scaleFireRate(tower, 0.6, 70);
                 tower.stunChance = Math.min(1, (tower.stunChance || 0) + 0.05);
             }
         }
@@ -937,7 +935,7 @@ const TOWER_UPGRADES = {
             cost: 350,
             image: '/img/sillyBilly.png',
             apply: (tower) => {
-                tower.stunDuration = Math.max(2800, (tower.stunDuration || 0) + 700);
+                tower.stunDuration = Math.max(1900, (tower.stunDuration || 0) + 500);
                 tower.stunRadius = Math.max(tower.stunRadius || 0, 24);
             }
         },
@@ -988,7 +986,7 @@ const TOWER_UPGRADES = {
             cost: 5650,
             image: '/img/sillyBilly.png',
             apply: (tower) => {
-                tower.stunDuration = Math.max(tower.stunDuration || 0, 4500);
+                tower.stunDuration = Math.max(tower.stunDuration || 0, 2800);
                 tower.stunRadius = (tower.stunRadius || 0) + 20;
                 tower.poisonDamage = (tower.poisonDamage || 0) + 2;
                 tower.poisonTickRate = Math.max(180, (tower.poisonTickRate || 500) - 80);
@@ -1003,12 +1001,23 @@ const TOWER_UPGRADES = {
             image: '/img/sillyBilly.png',
             apply: (tower) => {
                 tower.damage += 2;
-                tower.stunDuration = Math.max(tower.stunDuration || 0, 5200);
+                tower.stunDuration = Math.max(tower.stunDuration || 0, 3400);
                 tower.stunRadius = (tower.stunRadius || 0) + 28;
                 tower.poisonDamage = (tower.poisonDamage || 0) + 3;
                 tower.poisonDuration = Math.max(tower.poisonDuration || 0, 6500);
                 tower.poisonTickRate = Math.max(140, (tower.poisonTickRate || 500) - 120);
                 scaleFireRate(tower, 0.8, 90);
+            }
+        },
+        {
+            id: 'sillySafetyValve',
+            tier: 7,
+            name: 'Silly Safety Valve',
+            description: 'Adds a cooldown between Silly Billy stuns so enemies cannot be permanently locked down.',
+            cost: 12500,
+            image: '/img/sillyBilly.png',
+            apply: (tower) => {
+                tower.stunReapplyCooldown = 1800;
             }
         }
     ],
@@ -1479,6 +1488,7 @@ class Tower {
             bullet.stunChance = this.stunChance || 0;
             bullet.stunDuration = this.stunDuration || 0;
             bullet.stunRadius = this.stunRadius || 0;
+            bullet.stunReapplyCooldown = this.stunReapplyCooldown || 0;
             bullet.poisonDamage = this.poisonDamage || 0;
             bullet.poisonDuration = this.poisonDuration || 0;
             bullet.poisonTickRate = this.poisonTickRate || 0;

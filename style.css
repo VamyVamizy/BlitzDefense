@@ -28,6 +28,39 @@ body {
     z-index: 1;
 }
 
+.wave-completion-notice {
+    position: absolute;
+    top: 14%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    padding: 14px 24px;
+    border: 2px solid rgba(113, 255, 77, 0.7);
+    border-radius: 8px;
+    background: rgba(10, 20, 10, 0.94);
+    color: #baff9f;
+    font-size: 22px;
+    font-weight: bold;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: 0 0 24px rgba(113, 255, 77, 0.25);
+}
+
+.wave-completion-notice:not(.hidden) {
+    animation: wave-completion-notice-in 0.2s ease-out;
+}
+
+@keyframes wave-completion-notice-in {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -8px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
 .admin-playerbase-panel {
     position: fixed;
     top: 50%;
