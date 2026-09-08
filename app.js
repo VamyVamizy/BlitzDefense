@@ -127,7 +127,6 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'your_secret_key';
 const AUTH_URL = process.env.AUTH_URL || 'http://localhost:420/oauth';
 const THIS_URL = process.env.THIS_URL || `http://localhost:${PORT}`;
 const API_KEY = process.env.API_KEY || 'your_api_key';
-const ADMIN_DIGIPOG_AMOUNT = 999999;
 const gameSessions = new Map(); // sessionId -> gameData
 
 //middleware
@@ -704,10 +703,16 @@ app.get('/admin', isAuthenticated, requireRole('admin'), (req, res) => {
 });
 
 app.post('/admin/setDigipogs', isAuthenticated, requireRole('admin'), (req, res) => {
-    req.session.adminDigipogs = ADMIN_DIGIPOG_AMOUNT;
+    const rawAmount = req.body?.amount;
+    const amount = Number(rawAmount);
+    if (rawAmount === undefined || rawAmount === null || String(rawAmount).trim() === '' || !Number.isSafeInteger(amount) || amount < 0) {
+        return res.status(400).json({ ok: false, error: 'Enter a non-negative whole number.' });
+    }
+
+    req.session.adminDigipogs = amount;
     req.session.save((err) => {
         if (err) return res.status(500).json({ ok: false, error: 'Failed to save Digipog setting' });
-        res.json({ ok: true, amount: ADMIN_DIGIPOG_AMOUNT });
+        res.json({ ok: true, amount });
     });
 });
 

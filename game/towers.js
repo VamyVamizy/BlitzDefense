@@ -1128,7 +1128,7 @@ const TOWER_UPGRADES = {
                 tower.damage += 2;
                 tower.fireRate = Math.max(50, tower.fireRate - 300);
                 tower.range += 10000;
-                tower.projectileCount += 400;
+                tower.projectileCount += 1000;
             }
         }
     ]

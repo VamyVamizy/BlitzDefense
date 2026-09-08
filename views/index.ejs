@@ -190,6 +190,15 @@
                 Speed x1
             </button>
 
+            <% if (isAdmin) { %>
+                <input id="digipogsAmount" class="admin-digipogs-input" type="number" min="0" step="1"
+                    value="999999" aria-label="Digipog amount">
+                <button id="setDigipogsBtn" class="speed-toggle-btn" type="button">
+                    Set Digipogs
+                </button>
+                <span id="setDigipogsStatus" aria-live="polite"></span>
+            <% } %>
+
         </div>
 
 
@@ -1055,6 +1064,31 @@
                             'none';
 
                     }
+
+                    const setDigipogsBtn = document.getElementById('setDigipogsBtn');
+                    const digipogsAmount = document.getElementById('digipogsAmount');
+                    const setDigipogsStatus = document.getElementById('setDigipogsStatus');
+                    setDigipogsBtn?.addEventListener('click', async () => {
+                        setDigipogsBtn.disabled = true;
+                        try {
+                            const response = await fetch('/admin/setDigipogs', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ amount: digipogsAmount.value })
+                            });
+                            const data = await response.json();
+                            if (!response.ok || !data.ok) throw new Error(data.error || 'Unable to set Digipogs');
+                            if (window.game) {
+                                window.game.money = data.amount;
+                                window.game.updateUI();
+                            }
+                            setDigipogsStatus.textContent = 'Digipogs set to ' + data.amount.toLocaleString() + '.';
+                        } catch (error) {
+                            setDigipogsStatus.textContent = error.message;
+                        } finally {
+                            setDigipogsBtn.disabled = false;
+                        }
+                    });
 
                 }
 
