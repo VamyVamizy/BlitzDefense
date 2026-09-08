@@ -339,8 +339,8 @@ class Game {
             }
         });
 
-        // Start background music
-        this.startBackgroundMusic()
+        // Audio playback starts after a user interaction.
+        this.startBackgroundMusic();
 
         this.soundEnabled = true; // Initialize as enabled by default
 
@@ -781,7 +781,6 @@ class Game {
     startBackgroundMusic() {
         if (this.backgroundMusic) {
             this.currentMusic = this.backgroundMusic;
-            this.fadeIn(this.backgroundMusic);
         }
     }
 
@@ -999,7 +998,12 @@ class Game {
         if (!audioElement) return;
 
         audioElement.volume = 0;
-        audioElement.play();
+        const playPromise = audioElement.play();
+        if (playPromise) {
+            playPromise.catch(error => {
+                console.log('Audio playback deferred:', error.message);
+            });
+        }
         this.musicFading = true;
 
         const fadeStep = 0.025; // How much to increase each step  
@@ -1587,7 +1591,6 @@ class Game {
         });
 
         this.canvas.addEventListener('mousemove', (e) => {
-            this.startMusicIfNeeded();
             const rect = this.canvas.getBoundingClientRect();
             this.mouseX = e.clientX - rect.left;
             this.mouseY = e.clientY - rect.top;
@@ -1629,6 +1632,7 @@ class Game {
         if (startBtn) {
             startBtn.addEventListener('click', async () => {
                 console.log('Start Game clicked');
+                this.startMusicIfNeeded();
 
                 // Admin skips payment
                 if (window.isAdmin) {
@@ -2549,6 +2553,7 @@ class Game {
 
     async startGame() {
         try {
+            this.startMusicIfNeeded();
             console.log('Checking game access...');
 
             const accessCheck = await post('/checkGameAccess', {});
