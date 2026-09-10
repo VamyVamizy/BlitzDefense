@@ -442,7 +442,13 @@ class Game {
     }
 
     getWaveRewardMultiplier() {
-        return this.waveNumber <= 30 ? 0.5 : 0.15;
+        if (this.waveNumber <= 25) {
+            return 0.50;
+        } else if (this.waveNumber <= 50) {
+            return 0.10;
+        } else {
+            return 0.05;
+        }
     }
 
     getWaveCompletionReward(waveNumber) {
@@ -2690,6 +2696,13 @@ class Game {
     getTowerPlacementIssue(x, y, def) {
         const placementRect = this.getTowerPlacementRect(x, y, def);
 
+        if (Number.isFinite(def.maxPlacements)) {
+            const placedCount = this.placedTowers.filter(tower => tower && tower.type === def.name.toLowerCase()).length;
+            if (placedCount >= def.maxPlacements) {
+                return `maximum of ${def.maxPlacements} placed`;
+            }
+        }
+
         // Keep the full tower on the canvas.
         if (
             placementRect.x < 0 ||
@@ -2949,10 +2962,8 @@ class Game {
     }
 
     getHackerRoundReward(tower) {
-        return Math.max(
-            1,
-            Math.round((250 + this.waveNumber * 1.2) * (tower.hackRewardMultiplier || 1) * 0.25)
-        );
+        const rewardsByUpgradeLevel = [60, 100, 225, 500, 900, 1500];
+        return rewardsByUpgradeLevel[Math.min(tower.level - 1, rewardsByUpgradeLevel.length - 1)];
     }
 
     runHackerRoundHack(allEnemies) {
