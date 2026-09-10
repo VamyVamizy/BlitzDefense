@@ -45,7 +45,8 @@ const TOWER_TYPES = {
     },
     hacker: {
         name: 'Hacker',
-        cost: 850,
+        cost: 300,
+        maxPlacements: 10,
         damage: 0,
         color: '#9C27B0',
         width: 30,
@@ -537,7 +538,7 @@ const TOWER_UPGRADES = {
             tier: 1,
             name: 'Swift Skills',
             description: 'Improved hacking skills for a stronger payout at round start.',
-            cost: 1500,
+            cost: 200,
             image: '/img/redditMod.png',
             apply: (tower) => {
                 tower.hackRewardMultiplier = (tower.hackRewardMultiplier || 1) + 0.35;
@@ -548,7 +549,7 @@ const TOWER_UPGRADES = {
             tier: 2,
             name: 'Hacker Knowledge',
             description: 'Enhanced abilities allow for deeper system access. Make some more money per hack.',
-            cost: 4600,
+            cost: 600,
             image: '/img/redditMod.png',
             apply: (tower) => {
                 tower.hackRewardMultiplier = (tower.hackRewardMultiplier || 1) + 0.5;
@@ -559,7 +560,7 @@ const TOWER_UPGRADES = {
             tier: 3,
             name: 'Malware Expert',
             description: 'Advanced malware allows deeper exploits and doubles each round-start payout.',
-            cost: 10200,
+            cost: 1250,
             image: '/img/redditMod.png',
             apply: (tower) => {
                 tower.hackRewardMultiplier = (tower.hackRewardMultiplier || 1) * 2;
@@ -570,7 +571,7 @@ const TOWER_UPGRADES = {
             tier: 4,
             name: 'System Override',
             description: 'Time to make the big bucks! Override controls to triple each round-start payout.',
-            cost: 19600,
+            cost: 2500,
             image: '/img/redditMod.png',
             apply: (tower) => {
                 tower.hackRewardMultiplier = (tower.hackRewardMultiplier || 1) * 3;
@@ -581,7 +582,7 @@ const TOWER_UPGRADES = {
             tier: 5,
             name: 'The Merkman',
             description: 'Wait, I know that guy! How did he get here? Merkert will periodically remove specail states from enemies',
-            cost: 35200,
+            cost: 4500,
             image: '/img/merkman.png',
             apply: (tower) => {
                 tower.statusCleanseChance = Math.min(1, (tower.statusCleanseChance || 0) + 0.2);
