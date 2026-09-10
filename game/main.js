@@ -73,6 +73,7 @@ const DIFFICULTY_PRESETS = {
         label: 'Easy',
         description: 'Fewer enemies, weaker foes, and lesser rewards.',
         enemyHealthMultiplier: 0.8,
+        postFiftyHpGrowthRate: 0,
         enemySpeedMultiplier: 0.9,
         rewardMultiplier: 0.25,
         spawnCountMultiplier: 0.85,
@@ -82,6 +83,7 @@ const DIFFICULTY_PRESETS = {
         label: 'Normal',
         description: 'The intended baseline experience.',
         enemyHealthMultiplier: 1,
+        postFiftyHpGrowthRate: 0.01,
         enemySpeedMultiplier: 1,
         rewardMultiplier: 1,
         spawnCountMultiplier: 1,
@@ -91,6 +93,7 @@ const DIFFICULTY_PRESETS = {
         label: 'Hard',
         description: 'More enemies, tougher targets, and modestly better rewards.',
         enemyHealthMultiplier: 1.25,
+        postFiftyHpGrowthRate: 0.03,
         enemySpeedMultiplier: 1.1,
         rewardMultiplier: 1.1,
         spawnCountMultiplier: 1.15,
@@ -100,6 +103,7 @@ const DIFFICULTY_PRESETS = {
         label: 'Nightmare',
         description: 'Heavy pressure with dangerous enemies and larger waves.',
         enemyHealthMultiplier: 1.6,
+        postFiftyHpGrowthRate: 0.05,
         enemySpeedMultiplier: 1.25,
         rewardMultiplier: 1.25,
         spawnCountMultiplier: 1.35,
@@ -550,6 +554,10 @@ class Game {
         }
 
         enemy.hp = Math.max(1, Math.round(enemy.baseHp * settings.enemyHealthMultiplier));
+        const wavesAfterFifty = Math.max(0, this.waveNumber - 50);
+        const hpGrowthRate = settings.postFiftyHpGrowthRate || 0;
+        const postFiftyMultiplier = Math.pow(1 + hpGrowthRate, wavesAfterFifty);
+        enemy.hp = Math.max(1, Math.round(enemy.hp * postFiftyMultiplier));
         enemy.maxHp = enemy.hp;
         enemy.speed = enemy.baseSpeed * settings.enemySpeedMultiplier;
         enemy.worth = Math.max(0, Math.round(enemy.baseWorth * settings.rewardMultiplier));
