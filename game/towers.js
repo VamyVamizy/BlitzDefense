@@ -1008,17 +1008,6 @@ const TOWER_UPGRADES = {
                 tower.poisonTickRate = Math.max(140, (tower.poisonTickRate || 500) - 120);
                 scaleFireRate(tower, 0.8, 90);
             }
-        },
-        {
-            id: 'sillySafetyValve',
-            tier: 7,
-            name: 'Silly Safety Valve',
-            description: 'Adds a cooldown between Silly Billy stuns so enemies cannot be permanently locked down.',
-            cost: 12500,
-            image: '/img/sillyBilly.png',
-            apply: (tower) => {
-                tower.stunReapplyCooldown = 1800;
-            }
         }
     ],
     grohl: [
@@ -1237,6 +1226,7 @@ class Tower {
         this.currentUpgradeImage = def.image || null;
         this.totalSpent = Number.isFinite(def.cost) ? def.cost : 0;
         this.totalHackedMoney = 0;
+        this.damageDealt = 0;
 
         this.countdownDuration = def.countdownDuration || 0;
         this.countdownRemaining = this.countdownDuration;
