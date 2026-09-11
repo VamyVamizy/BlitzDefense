@@ -425,6 +425,7 @@ class Game {
         this.selectedTower = null;       // Key from TOWER_TYPES currently selected in shop
         this.selectedPlacedTower = null;
         this.hoveredPlacedTower = null;
+        this.hoveredEnemy = null;
         this.hoveredTowerShopKey = null;
         this.towerShopRects = [];
         this.storeOpen = false;
@@ -1307,6 +1308,20 @@ class Game {
         return null;
     }
 
+    findEnemyAtPoint(x, y) {
+        const enemyGroups = [this.bosses, this.friendlySummons, this.sprinters, this.tanks, this.enemies];
+        for (const enemies of enemyGroups) {
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
+                if (!enemy || enemy.hidden || enemy.hp <= 0) continue;
+                if (x >= enemy.x && x <= enemy.x + enemy.width && y >= enemy.y && y <= enemy.y + enemy.height) {
+                    return enemy;
+                }
+            }
+        }
+        return null;
+    }
+
     setSelectedPlacedTower(tower) {
         this.selectedPlacedTower = tower || null;
         this.placedTowers.forEach(item => {
@@ -1367,6 +1382,7 @@ class Game {
             title.textContent = `${tower.name} | Lv ${tower.level || 1}`;
             body.innerHTML = `<div class="upgrade-stats">
                 <div><span>Damage</span><strong>${tower.damage || 0}</strong></div>
+                <div><span>Damage Done</span><strong>${Math.round(tower.damageDealt || 0)}</strong></div>
                 <div><span>Range</span><strong>${Math.round(tower.range || 0)}</strong></div>
                 <div><span>Timer</span><strong>${countdownText}</strong></div>
             </div>
@@ -1413,6 +1429,7 @@ class Game {
 
         const statsHTML = `<div class="upgrade-stats">
             <div><span>Damage</span><strong>${Math.round(tower.damage || 0)}</strong></div>
+            <div><span>Damage Done</span><strong>${Math.round(tower.damageDealt || 0)}</strong></div>
             <div><span>Range</span><strong>${tower.range === Infinity ? 'MAX' : Math.round(tower.range || 0)}</strong></div>
             <div><span>Level</span><strong>${tower.level || 1}</strong></div>
         </div>`;
@@ -1634,6 +1651,7 @@ class Game {
             this.mouseX = e.clientX - rect.left;
             this.mouseY = e.clientY - rect.top;
             this.hoveredPlacedTower = this.selectedTower ? null : this.findTowerAtPoint(this.mouseX, this.mouseY);
+            this.hoveredEnemy = this.selectedTower ? null : this.findEnemyAtPoint(this.mouseX, this.mouseY);
         });
 
         this.canvas.addEventListener('mousedown', (e) => {
@@ -2240,6 +2258,17 @@ class Game {
     renderHoverTooltip() {
         if (!this.showTooltips) return;
         if (this.selectedTower) return;
+
+        if (this.hoveredEnemy && this.hoveredEnemy.hp > 0) {
+            this.drawTooltipBox(
+                `HP: ${Math.max(0, Math.ceil(this.hoveredEnemy.hp))} / ${Math.ceil(this.hoveredEnemy.maxHp)}`,
+                this.mouseX,
+                this.mouseY,
+                { background: 'rgba(20, 24, 34, 0.92)', border: 'rgba(255, 100, 100, 0.7)', color: '#ffd6d6' }
+            );
+            return;
+        }
+
         if (!this.hoveredPlacedTower) return;
 
         this.drawTooltipBox(
@@ -2566,6 +2595,7 @@ class Game {
         this.selectedTower = null;
         this.selectedPlacedTower = null;
         this.hoveredPlacedTower = null;
+        this.hoveredEnemy = null;
         this.hoveredTowerShopKey = null;
         this.storeOpen = false;
 
@@ -3136,7 +3166,9 @@ class Game {
             this.addSpellAnimation('heroShockwave', hero.x + hero.width / 2, hero.y + hero.height / 2, { radius: hero.range, life: 450, color: '#58d68d' });
         } else if (hero.heroPath === 'red') {
             enemies.forEach(enemy => {
-                enemy.takeDamage ? enemy.takeDamage(25) : (enemy.hp -= 25);
+                const damage = 25;
+                enemy.takeDamage ? enemy.takeDamage(damage) : (enemy.hp -= damage);
+                hero.damageDealt = (hero.damageDealt || 0) + damage;
                 enemy.fortified = false;
                 enemy.reinforced = false;
                 enemy.armorBroken = true;
@@ -3383,6 +3415,7 @@ class Game {
                             if ((sdx * sdx + sdy * sdy) <= surgeRadius * surgeRadius) {
                                 const surgeDamage = Math.max(1, Math.round((tower.damage || 1) * (tower.heroDamageMultiplier || 1) * 0.8));
                                 enemy.takeDamage ? enemy.takeDamage(surgeDamage) : (enemy.hp -= surgeDamage);
+                                tower.damageDealt = (tower.damageDealt || 0) + surgeDamage;
                             }
                         }
                         this.addSpellAnimation('arcaneSurge', tx, ty, {
@@ -4146,6 +4179,11 @@ class Game {
             return damage;
         };
 
+        const recordTowerDamage = (bullet, damage) => {
+            if (!bullet.fromTower || !bullet.sourceTower) return;
+            bullet.sourceTower.damageDealt = (bullet.sourceTower.damageDealt || 0) + Math.max(0, damage);
+        };
+
         const getBeamLineForBullet = (bullet) => {
             if (!bullet || !bullet.isRailBeam) return null;
 
@@ -4271,7 +4309,7 @@ class Game {
 
                 if (bullet.stunDuration > 0) {
                     const reapplyCooldown = bullet.sourceTower?.type === 'silly'
-                        ? bullet.stunReapplyCooldown || 0
+                        ? Math.max(bullet.stunReapplyCooldown || 0, bullet.stunDuration + 1)
                         : 0;
                     if (reapplyCooldown > 0 && (enemy.sillyStunImmuneUntil || 0) > Date.now()) {
                         return;
@@ -4388,6 +4426,7 @@ class Game {
                         if (dist <= explosionRadius) {
                             const damage = getTowerAdjustedDamage(bullet, enemy);
                             enemy.takeDamage ? enemy.takeDamage(damage) : (enemy.hp -= damage);
+                            recordTowerDamage(bullet, damage);
                             applyTowerHitEffects(bullet, enemy);
                             bombHit = true;
 
@@ -4445,6 +4484,7 @@ class Game {
 
                     // Damage the enemy first
                     enemy.takeDamage ? enemy.takeDamage(damage) : (enemy.hp -= damage);
+                    recordTowerDamage(bullet, damage);
                     applyTowerHitEffects(bullet, enemy);
                     this.createExplosion(bullet.x, bullet.y);
                     this.playSound('enemyHit');
@@ -4474,6 +4514,7 @@ class Game {
 
                     // Damage the enemy first
                     shooter.takeDamage ? shooter.takeDamage(damage) : (shooter.hp -= damage);
+                    recordTowerDamage(bullet, damage);
                     applyTowerHitEffects(bullet, shooter);
                     this.createExplosion(bullet.x, bullet.y);
                     this.playSound('enemyHit');
@@ -4498,6 +4539,7 @@ class Game {
                     if (!canBeamDamageTarget(bullet, tank)) continue;
                     const damage = getTowerAdjustedDamage(bullet, tank);
                     tank.takeDamage(damage);
+                    recordTowerDamage(bullet, damage);
                     applyTowerHitEffects(bullet, tank);
                     this.createExplosion(bullet.x, bullet.y);
                     this.playSound('enemyHit');
@@ -4523,6 +4565,7 @@ class Game {
                     if (!canBeamDamageTarget(bullet, sprinter)) continue;
                     const damage = getTowerAdjustedDamage(bullet, sprinter);
                     sprinter.takeDamage(damage);
+                    recordTowerDamage(bullet, damage);
                     applyTowerHitEffects(bullet, sprinter);
                     this.createExplosion(bullet.x, bullet.y);
                     this.playSound('enemyHit');
@@ -4550,6 +4593,7 @@ class Game {
 
                     // Damage the boss first
                     boss.takeDamage ? boss.takeDamage(damage) : (boss.hp -= damage);
+                    recordTowerDamage(bullet, damage);
                     applyTowerHitEffects(bullet, boss);
                     this.createExplosion(bullet.x, bullet.y);
                     this.playSound('enemyHit');
@@ -4966,6 +5010,7 @@ class Game {
         this.selectedTower = null;
         this.selectedPlacedTower = null;
         this.hoveredPlacedTower = null;
+        this.hoveredEnemy = null;
         this.hoveredTowerShopKey = null;
         this.storeOpen = false;
         this.exp = 0;
