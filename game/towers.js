@@ -267,7 +267,7 @@ const TOWER_UPGRADES = {
             tier: 1,
             name: 'Scout',
             description: 'Attack Faster over a longer range',
-            cost: 325,
+            cost: 150,
             image: '/img/scout.png',
             apply: (tower) => {
                 tower.fireRate = Math.max(120, Math.round(tower.fireRate * 0.9));
@@ -279,10 +279,9 @@ const TOWER_UPGRADES = {
             tier: 2,
             name: 'Better Bullets',
             description: 'Higher caliber bullets with increased damage and puncture',
-            cost: 750,
+            cost: 300,
             image: '/img/scout.png',
             apply: (tower) => {
-                tower.damage += 1;
                 addPierce(tower, 1);
             }
         },
@@ -291,7 +290,7 @@ const TOWER_UPGRADES = {
             tier: 3,
             name: 'Good Goggles',
             description: 'Improved vision allows you to see farther and through stealth',
-            cost: 1450,
+            cost: 625,
             image: '/img/scout.png',
             apply: (tower) => {
                 tower.range += 25;
@@ -303,7 +302,7 @@ const TOWER_UPGRADES = {
             tier: 4,
             name: 'Twin Fire',
             description: 'Double the gun, double the bullets, and double the fun.',
-            cost: 2750,
+            cost: 1250,
             image: '/img/scout.png',
             apply: (tower) => {
                 scaleFireRate(tower, 0.5, 100);
@@ -314,10 +313,10 @@ const TOWER_UPGRADES = {
             tier: 5,
             name: 'Rapid Fire',
             description: 'Took a few gun safety courses, more damage, more pierce, and much faster fire rate.',
-            cost: 5200,
+            cost: 2625,
             image: '/img/scout.png',
             apply: (tower) => {
-                tower.damage += 2;
+                tower.damage += 1;
                 addPierce(tower, 2);
             }
         },
@@ -326,11 +325,11 @@ const TOWER_UPGRADES = {
             tier: 6,
             name: 'TF2 Scout',
             description: 'THINK FAST CHUCKLENUTS! An aggressive and snarky fighter with even higher damage and fire rate. Chance to stun enemies on hit.',
-            cost: 9800,
+            cost: 5000,
             image: '/img/scout.png',
             apply: (tower) => {
-                tower.damage += 3;
-                tower.range += 20;
+                tower.damage += 2;
+                tower.range += 25;
                 tower.stunChance = Math.min(1, (tower.stunChance || 0) + 0.05);
             }
         }
@@ -351,10 +350,11 @@ const TOWER_UPGRADES = {
             id: 'highCaliber',
             tier: 2,
             name: 'High Caliber',
-            description: 'Higher caliber bullets with the ability to rip through armor and deal increased damage and puncture',
+            description: 'Higher caliber bullets with the ability to rip through armor and deal increased damage and puncture along with the ability to see hiddens',
             cost: 1300,
             image: '/img/miku.png',
             apply: (tower) => {
+                tower.seeHidden = true;
                 tower.damage += 3;
                 addPierce(tower, 2);
                 tower.damageReinforced = true;
@@ -410,7 +410,6 @@ const TOWER_UPGRADES = {
                 scaleFireRate(tower, 0.7, 60);
                 tower.pierce = Infinity;
                 tower.range = Infinity;
-                tower.seeHidden = true;
                 tower.damageReinforced = true;
                 tower.projectileLife = 1;
                 tower.railBeamMode = 'miku';
@@ -500,7 +499,7 @@ const TOWER_UPGRADES = {
             tier: 1,
             name: 'Lucky Charm',
             description: 'Roll for a random buff/upgrade each round. ',
-            cost: 50,
+            cost: 7500,
             image: '/img/pokerTable.jpg',
             //Randomly apply upgrades
             apply: (tower) => {
